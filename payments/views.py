@@ -19,7 +19,6 @@ def home(request):
     """Landing page with available packages"""
     packages = Package.objects.filter(is_active=True)
     
-    # Check if user has active access
     user_access = None
     if request.session.session_key:
         try:
@@ -44,11 +43,9 @@ def buy_package(request, package_id):
     """Handle package purchase"""
     package = get_object_or_404(Package, id=package_id, is_active=True)
     
-    # Ensure session exists
     if not request.session.session_key:
         request.session.create()
     
-    # Check if user already has active access
     try:
         existing_access = UserAccess.objects.get(
             session_key=request.session.session_key,
@@ -60,7 +57,6 @@ def buy_package(request, package_id):
     except UserAccess.DoesNotExist:
         pass
     
-    # Create transaction
     external_id = f"payment_{uuid.uuid4().hex[:8]}_{package_id}"
     
     transaction = Transaction.objects.create(
@@ -68,15 +64,14 @@ def buy_package(request, package_id):
         external_id=external_id,
         session_key=request.session.session_key,
         amount=package.price,
-        expires_at=timezone.now() + timezone.timedelta(days=1)  # 24 hours to pay
+        expires_at=timezone.now() + timezone.timedelta(days=1)
     )
-      # Create Xendit invoice
     xendit_service = XenditService()
     invoice_data = xendit_service.create_invoice(
         external_id=external_id,
         amount=package.price,
         description=f"Payment for {package.name}",
-        payment_methods=["VIRTUAL_ACCOUNT", "CREDIT_CARD", "QR_CODE"]
+        payment_methods=["VIRTUAL_ACCOUNT", "CREDIT_CARD", "QR_CODE", "BCA", "BNI", "BRI", "MANDIRI", "QRIS"]
     )
     
     if invoice_data:
@@ -84,11 +79,9 @@ def buy_package(request, package_id):
         transaction.payment_url = invoice_data.get('invoice_url')
         transaction.save()
         
-        # Store transaction ID in session for later reference
         request.session['current_transaction_id'] = str(transaction.id)
         request.session['current_external_id'] = external_id
         
-        # Redirect to Xendit payment page
         return redirect(transaction.payment_url)
     else:
         messages.error(request, 'Failed to create payment. Please try again.')
@@ -99,13 +92,10 @@ def buy_package(request, package_id):
 def xendit_callback(request):
     """Handle Xendit webhook callback"""
     try:
-        # Parse the JSON payload
         payload = json.loads(request.body.decode('utf-8'))
         
-        # Log the callback for debugging
         logger.info(f"Xendit callback received: {payload}")
         
-        # Get transaction by external_id
         external_id = payload.get('external_id')
         if not external_id:
             logger.error("No external_id in callback payload")
@@ -117,19 +107,16 @@ def xendit_callback(request):
             logger.error(f"Transaction not found for external_id: {external_id}")
             return HttpResponse(status=404)
         
-        # Update transaction with callback data
-        transaction.xendit_callback_data = payload        # Check payment status - handle both live and test modes
+        transaction.xendit_callback_data = payload
         status = payload.get('status', '').upper()
         logger.info(f"Processing payment status: {status} for transaction {external_id}")
         logger.info(f"Full payload: {json.dumps(payload, indent=2)}")
         
-        # Handle various success statuses (test and live modes)
         if status in ['PAID', 'COMPLETED', 'SETTLED', 'SUCCESS']:
             transaction.status = 'PAID'
             transaction.paid_at = timezone.now()
             transaction.payment_method = payload.get('payment_method', payload.get('payment_channel', '')).upper()
             
-            # Grant access to user
             user_access, created = UserAccess.objects.update_or_create(
                 session_key=transaction.session_key,
                 defaults={
@@ -165,7 +152,6 @@ def xendit_callback(request):
 
 def payment_success(request):
     """Payment success page"""
-    # Get current transaction ID from session
     current_transaction_id = request.session.get('current_transaction_id')
     current_transaction = None
     
@@ -175,7 +161,6 @@ def payment_success(request):
         except Transaction.DoesNotExist:
             pass
     
-    # Check if user has active access (payment completed)
     user_access = None
     if request.session.session_key:
         try:
@@ -203,7 +188,6 @@ def payment_failed(request):
 
 def paid_content(request):
     """Protected content that requires payment"""
-    # Check if user has valid access
     if not request.session.session_key:
         messages.error(request, 'You need to purchase a package to access this content.')
         return redirect('home')
@@ -260,7 +244,6 @@ def check_user_access(request):
                 'redirect_url': reverse('paid_content')
             })
         else:
-            # Access expired
             user_access.is_active = False
             user_access.save()
             return JsonResponse({'has_access': False})
@@ -280,7 +263,6 @@ def verify_payment(request, transaction_id):
                 'redirect_url': reverse('paid_content')
             })
         
-        # Check with Xendit API
         xendit_service = XenditService()
         if transaction.invoice_id:
             invoice_data = xendit_service.get_invoice(transaction.invoice_id)
@@ -289,15 +271,12 @@ def verify_payment(request, transaction_id):
                 status = invoice_data.get('status', '').upper()
                 logger.info(f"Xendit API status for {transaction.external_id}: {status}")
                 
-                # Check if payment is successful
                 if status in ['PAID', 'SETTLED', 'COMPLETED']:
-                    # Update transaction
                     transaction.status = 'PAID'
                     transaction.paid_at = timezone.now()
                     transaction.payment_method = invoice_data.get('payment_method', 'UNKNOWN')
                     transaction.save()
                     
-                    # Grant access
                     user_access, created = UserAccess.objects.update_or_create(
                         session_key=transaction.session_key,
                         defaults={
@@ -355,8 +334,6 @@ def verify_payment(request, transaction_id):
         }, status=500)
 
 def simulate_payment_success(request, transaction_id):
-    """Simulate successful payment for test mode"""
-    # Allow simulation if DEBUG is True OR if we're using Xendit test keys OR if test endpoints are enabled
     if not (settings.DEBUG or getattr(settings, 'ENABLE_TEST_ENDPOINTS', False) or getattr(settings, 'USING_XENDIT_TEST_KEYS', False)):
         return JsonResponse({'error': 'This endpoint is only available in test mode'}, status=403)
     
@@ -369,13 +346,11 @@ def simulate_payment_success(request, transaction_id):
                 'message': 'Payment already confirmed'
             })
         
-        # Simulate successful payment
         transaction.status = 'PAID'
         transaction.paid_at = timezone.now()
         transaction.payment_method = 'TEST_PAYMENT'
         transaction.save()
         
-        # Grant access
         user_access, created = UserAccess.objects.update_or_create(
             session_key=transaction.session_key,
             defaults={
