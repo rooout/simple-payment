@@ -1,3 +1,21 @@
+#!/usr/bin/env python
+"""
+Script to create initial packages for the payment gateway
+Run with: python create_packages.py
+"""
+
+import os
+import sys
+import django
+
+# Add the project directory to Python path
+project_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, project_dir)
+
+# Setup Django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'payment_gateway.settings')
+django.setup()
+
 from payments.models import Package
 
 # Create sample packages
@@ -28,8 +46,9 @@ for package_data in packages_data:
         defaults=package_data
     )
     if created:
-        print(f"Created package: {package.name}")
+        print(f"✅ Created package: {package.name} - Rp {package.price:,.0f} ({package.duration_days} days)")
     else:
-        print(f"Package already exists: {package.name}")
+        print(f"ℹ️  Package already exists: {package.name}")
 
-print("Package creation completed!")
+print("\n🎉 Package setup completed!")
+print("You can now run your Django server and see the packages on the homepage.")
