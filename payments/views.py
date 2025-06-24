@@ -16,7 +16,6 @@ from .services import XenditService
 logger = logging.getLogger(__name__)
 
 def home(request):
-    """Landing page with available packages"""
     packages = Package.objects.filter(is_active=True)
     
     user_access = None
@@ -40,7 +39,6 @@ def home(request):
     return render(request, 'payments/home.html', context)
 
 def buy_package(request, package_id):
-    """Handle package purchase"""
     package = get_object_or_404(Package, id=package_id, is_active=True)
     
     if not request.session.session_key:
@@ -90,7 +88,6 @@ def buy_package(request, package_id):
 @csrf_exempt
 @require_http_methods(["POST"])
 def xendit_callback(request):
-    """Handle Xendit webhook callback"""
     try:
         payload = json.loads(request.body.decode('utf-8'))
         
@@ -151,7 +148,6 @@ def xendit_callback(request):
         return HttpResponse(status=500)
 
 def payment_success(request):
-    """Payment success page"""
     current_transaction_id = request.session.get('current_transaction_id')
     current_transaction = None
     
@@ -183,11 +179,9 @@ def payment_success(request):
     return render(request, 'payments/payment_success.html', context)
 
 def payment_failed(request):
-    """Payment failed page"""
     return render(request, 'payments/payment_failed.html')
 
 def paid_content(request):
-    """Protected content that requires payment"""
     if not request.session.session_key:
         messages.error(request, 'You need to purchase a package to access this content.')
         return redirect('home')
@@ -214,7 +208,6 @@ def paid_content(request):
         return redirect('home')
 
 def check_payment_status(request, transaction_id):
-    """Check payment status via AJAX"""
     try:
         transaction = Transaction.objects.get(id=transaction_id)
         return JsonResponse({
@@ -226,7 +219,6 @@ def check_payment_status(request, transaction_id):
         return JsonResponse({'error': 'Transaction not found'}, status=404)
 
 def check_user_access(request):
-    """Check if current user has premium access (for AJAX calls)"""
     if not request.session.session_key:
         return JsonResponse({'has_access': False})
     
@@ -252,7 +244,6 @@ def check_user_access(request):
         return JsonResponse({'has_access': False})
 
 def verify_payment(request, transaction_id):
-    """Manually verify payment status with Xendit (useful for test mode)"""
     try:
         transaction = Transaction.objects.get(id=transaction_id)
         

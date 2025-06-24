@@ -202,3 +202,7 @@ Temporary Items
 
 DEPLOYMENT.md
 PROJECT_SUMMARY.md
+Procfile
+setup_production.py
+railway_setup.share
+payments/management/commands/check_status.py
