@@ -14,22 +14,57 @@
                     <h2 class="text-success mb-3">Payment Successful!</h2>
                     <p class="lead mb-4">Thank you for your purchase. Your payment has been processed successfully.</p>
                     
-                    <div class="alert alert-success">
-                        <h6>What happens next?</h6>
-                        <ul class="text-start mb-0">
-                            <li>You now have access to premium content</li>
-                            <li>Your access is immediately activated</li>
-                            <li>You can start exploring premium features</li>
-                        </ul>
-                    </div>
-                    
-                    <div class="d-grid gap-2">
-                        <a href="{% url 'paid_content' %}" class="btn btn-success btn-lg">
-                            Access Premium Content
-                        </a>
-                        <a href="{% url 'home' %}" class="btn btn-outline-primary">
-                            Back to Home
-                        </a>
+                    <div id="access-status">
+                        {% if user_access and user_access.is_valid %}
+                        <!-- Payment confirmed - show immediate access -->
+                        <div class="alert alert-success">
+                            <h6>✅ Payment Confirmed!</h6>
+                            <ul class="text-start mb-0">
+                                <li>Package: {{ user_access.package.name }}</li>
+                                <li>Access granted until: {{ user_access.expires_at|date:"M d, Y" }}</li>
+                                <li>Redirecting to premium content in <span id="countdown">3</span> seconds...</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'paid_content' %}" class="btn btn-success btn-lg">
+                                🚀 Access Premium Content Now
+                            </a>
+                            <a href="{% url 'home' %}" class="btn btn-outline-primary">
+                                Back to Home
+                            </a>
+                        </div>
+                        {% else %}
+                        <!-- Payment processing - show waiting state -->
+                        <div class="alert alert-info">
+                            <h6>⏳ Confirming Payment...</h6>
+                            <ul class="text-start mb-0">
+                                <li>Your payment is being processed</li>
+                                <li>This usually takes a few seconds</li>
+                                <li>Please wait while we activate your access</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="progress mb-3">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 30%" id="progress-bar"></div>
+                        </div>
+                          <div class="d-grid gap-2">
+                            <button id="checkAccessBtn" class="btn btn-primary btn-lg" onclick="manualCheckAccess()" disabled>
+                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                Checking Access...
+                            </button>
+                            <button id="verifyPaymentBtn" class="btn btn-warning btn-lg" onclick="verifyPayment()" style="display: none;">
+                                🔍 Verify Payment with Xendit
+                            </button>
+                            <button id="simulatePaymentBtn" class="btn btn-success btn-lg" onclick="simulatePayment()" style="display: none;">
+                                🧪 Complete Test Payment
+                            </button>
+                            <a href="{% url 'home' %}" class="btn btn-outline-secondary">
+                                Back to Home
+                            </a>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -38,10 +73,221 @@
 </div>
 
 <script>
-// Optional: Auto-redirect to premium content after 5 seconds
-setTimeout(function() {
-    // Uncomment the line below to enable auto-redirect
-    // window.location.href = "{% url 'paid_content' %}";
-}, 5000);
+let checkInterval;
+let progressValue = 30;
+let checkCount = 0;
+const maxChecks = 20; // Check for 60 seconds (3 seconds * 20)
+
+{% if user_access and user_access.is_valid %}
+// Auto-redirect to premium content after 3 seconds
+let countdown = 3;
+const countdownElement = document.getElementById('countdown');
+
+const timer = setInterval(function() {
+    countdown--;
+    if (countdownElement) {
+        countdownElement.textContent = countdown;
+    }
+    
+    if (countdown <= 0) {
+        clearInterval(timer);
+        window.location.href = "{% url 'paid_content' %}";
+    }
+}, 1000);
+{% else %}
+// Function to check access status
+function checkAccessStatus() {
+    fetch('{% url "check_user_access" %}')
+        .then(response => response.json())
+        .then(data => {
+            checkCount++;
+            
+            // Update progress bar
+            progressValue = Math.min(30 + (checkCount * 3), 90);
+            const progressBar = document.getElementById('progress-bar');
+            if (progressBar) {
+                progressBar.style.width = progressValue + '%';
+            }
+            
+            if (data.has_access) {
+                // Access granted! Update the UI and redirect
+                clearInterval(checkInterval);
+                
+                const statusDiv = document.getElementById('access-status');
+                statusDiv.innerHTML = `
+                    <div class="alert alert-success">
+                        <h6>✅ Payment Confirmed!</h6>
+                        <ul class="text-start mb-0">
+                            <li>Package: ${data.package_name}</li>
+                            <li>Access activated successfully!</li>
+                            <li>Redirecting to premium content...</li>
+                        </ul>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <a href="${data.redirect_url}" class="btn btn-success btn-lg">
+                            🚀 Access Premium Content Now
+                        </a>
+                    </div>
+                `;
+                
+                // Redirect after 2 seconds
+                setTimeout(function() {
+                    window.location.href = data.redirect_url;
+                }, 2000);
+                
+            } else if (checkCount >= maxChecks) {
+                // Timeout - show manual check option
+                clearInterval(checkInterval);
+                
+                const btn = document.getElementById('checkAccessBtn');
+                btn.innerHTML = '🔄 Check Access Status';
+                btn.disabled = false;
+                btn.onclick = manualCheckAccess;
+                
+                const statusDiv = document.getElementById('access-status');
+                statusDiv.innerHTML = `                        <div class="alert alert-warning">
+                            <h6>⚠️ Payment Processing</h6>
+                            <ul class="text-start mb-0">
+                                <li>Your payment may still be processing</li>
+                                <li>Click "Verify Payment" to check with Xendit</li>
+                                <li>Or use "Complete Test Payment" for test mode</li>
+                            </ul>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button id="checkAccessBtn" class="btn btn-primary btn-lg" onclick="manualCheckAccess()">
+                                🔄 Check Access Status
+                            </button>
+                            <button id="verifyPaymentBtn" class="btn btn-warning btn-lg" onclick="verifyPayment()">
+                                🔍 Verify Payment with Xendit
+                            </button>
+                            <button id="simulatePaymentBtn" class="btn btn-success btn-lg" onclick="simulatePayment()">
+                                🧪 Complete Test Payment
+                            </button>
+                            <a href="{% url 'paid_content' %}" class="btn btn-outline-success btn-lg">
+                                Try Access Premium Content
+                            </a>
+                            <a href="{% url 'home' %}" class="btn btn-outline-secondary">
+                                Back to Home
+                            </a>
+                        </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error checking access:', error);
+            checkCount++;
+        });
+}
+
+// Start checking immediately and then every 3 seconds
+checkAccessStatus();
+checkInterval = setInterval(checkAccessStatus, 3000);
+
+// Manual check function
+function manualCheckAccess() {
+    const btn = document.getElementById('checkAccessBtn');
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Checking...';
+    btn.disabled = true;
+    
+    checkAccessStatus();
+    
+    setTimeout(function() {
+        if (btn) {
+            btn.innerHTML = '🔄 Check Access Status';
+            btn.disabled = false;
+        }
+    }, 3000);
+}
+
+// Verify payment with Xendit API
+function verifyPayment() {
+    const btn = document.getElementById('verifyPaymentBtn');
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verifying...';
+    btn.disabled = true;
+    
+    // Get transaction ID from template context
+    let transactionId = '{{ current_transaction_id|default:"" }}';
+    
+    if (!transactionId) {
+        // Fallback: Try to get from URL or session storage
+        const urlParts = window.location.search.match(/transaction_id=([^&]+)/);
+        transactionId = urlParts ? urlParts[1] : sessionStorage.getItem('current_transaction_id');
+    }
+    
+    if (transactionId) {
+        fetch(`/verify-payment/${transactionId}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✅ ' + data.message);
+                    if (data.redirect_url) {
+                        window.location.href = data.redirect_url;
+                    } else {
+                        window.location.reload();
+                    }
+                } else {
+                    alert('ℹ️ ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('❌ Error verifying payment. Please try again.');
+            })
+            .finally(() => {
+                btn.innerHTML = '🔍 Verify Payment with Xendit';
+                btn.disabled = false;
+            });
+    } else {
+        alert('⚠️ Transaction ID not found. Please try going back and making a new purchase.');
+        btn.innerHTML = '🔍 Verify Payment with Xendit';
+        btn.disabled = false;
+    }
+}
+
+// Simulate successful payment for test mode
+function simulatePayment() {
+    const btn = document.getElementById('simulatePaymentBtn');
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+    btn.disabled = true;
+    
+    // Get transaction ID from template context
+    let transactionId = '{{ current_transaction_id|default:"" }}';
+    
+    if (!transactionId) {
+        // Fallback: Try to get from URL or session storage
+        const urlParts = window.location.search.match(/transaction_id=([^&]+)/);
+        transactionId = urlParts ? urlParts[1] : sessionStorage.getItem('current_transaction_id');
+    }
+    
+    if (transactionId) {
+        fetch(`/simulate-payment/${transactionId}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('🎉 ' + data.message);
+                    if (data.redirect_url) {
+                        window.location.href = data.redirect_url;
+                    } else {
+                        window.location.reload();
+                    }
+                } else {
+                    alert('❌ ' + (data.error || data.message));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('❌ Error simulating payment. Please try again.');
+            })
+            .finally(() => {
+                btn.innerHTML = '🧪 Complete Test Payment';
+                btn.disabled = false;
+            });
+    } else {
+        alert('⚠️ Transaction ID not found. Please try going back and making a new purchase.');
+        btn.innerHTML = '🧪 Complete Test Payment';
+        btn.disabled = false;
+    }
+}
+{% endif %}
 </script>
 {% endblock %}
