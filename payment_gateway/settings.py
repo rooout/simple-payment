@@ -138,6 +138,14 @@ XENDIT_PUBLIC_KEY = config('XENDIT_PUBLIC_KEY', default='')
 XENDIT_CALLBACK_TOKEN = config('XENDIT_CALLBACK_TOKEN', default='')
 APP_URL = config('APP_URL', default='http://localhost:8000')
 
+# Test mode configuration
+# Enable test payment features even in production for demo purposes
+XENDIT_TEST_MODE = config('XENDIT_TEST_MODE', default=True, cast=bool)
+ENABLE_TEST_ENDPOINTS = config('ENABLE_TEST_ENDPOINTS', default=True, cast=bool)
+
+# Check if we're using Xendit test keys
+USING_XENDIT_TEST_KEYS = XENDIT_SECRET_KEY.startswith('xnd_development_') if XENDIT_SECRET_KEY else False
+
 # CSRF Settings for webhook
 CSRF_TRUSTED_ORIGINS = ['https://gateway.xendit.co']
 

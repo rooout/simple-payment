@@ -355,9 +355,10 @@ def verify_payment(request, transaction_id):
         }, status=500)
 
 def simulate_payment_success(request, transaction_id):
-    """Simulate successful payment for test mode (development only)"""
-    if not settings.DEBUG:
-        return JsonResponse({'error': 'This endpoint is only available in DEBUG mode'}, status=403)
+    """Simulate successful payment for test mode"""
+    # Allow simulation if DEBUG is True OR if we're using Xendit test keys OR if test endpoints are enabled
+    if not (settings.DEBUG or getattr(settings, 'ENABLE_TEST_ENDPOINTS', False) or getattr(settings, 'USING_XENDIT_TEST_KEYS', False)):
+        return JsonResponse({'error': 'This endpoint is only available in test mode'}, status=403)
     
     try:
         transaction = Transaction.objects.get(id=transaction_id)

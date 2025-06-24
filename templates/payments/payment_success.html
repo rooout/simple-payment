@@ -144,24 +144,23 @@ function checkAccessStatus() {
                 btn.disabled = false;
                 btn.onclick = manualCheckAccess;
                 
-                const statusDiv = document.getElementById('access-status');
-                statusDiv.innerHTML = `                        <div class="alert alert-warning">
+                const statusDiv = document.getElementById('access-status');                statusDiv.innerHTML = `                        <div class="alert alert-warning">
                             <h6>⚠️ Payment Processing</h6>
                             <ul class="text-start mb-0">
                                 <li>Your payment may still be processing</li>
-                                <li>Click "Verify Payment" to check with Xendit</li>
-                                <li>Or use "Complete Test Payment" for test mode</li>
+                                <li><strong>For test payments:</strong> Click "Complete Test Payment" below</li>
+                                <li>Or click "Verify Payment" to check with Xendit API</li>
                             </ul>
                         </div>
                         <div class="d-grid gap-2">
-                            <button id="checkAccessBtn" class="btn btn-primary btn-lg" onclick="manualCheckAccess()">
-                                🔄 Check Access Status
+                            <button id="simulatePaymentBtn" class="btn btn-success btn-lg" onclick="simulatePayment()">
+                                🧪 Complete Test Payment (Recommended)
                             </button>
                             <button id="verifyPaymentBtn" class="btn btn-warning btn-lg" onclick="verifyPayment()">
                                 🔍 Verify Payment with Xendit
                             </button>
-                            <button id="simulatePaymentBtn" class="btn btn-success btn-lg" onclick="simulatePayment()">
-                                🧪 Complete Test Payment
+                            <button id="checkAccessBtn" class="btn btn-primary btn-lg" onclick="manualCheckAccess()">
+                                🔄 Check Access Status
                             </button>
                             <a href="{% url 'paid_content' %}" class="btn btn-outline-success btn-lg">
                                 Try Access Premium Content
