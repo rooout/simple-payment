@@ -1,0 +1,112 @@
+{% extends 'payments/base.html' %}
+
+{% block title %}Home - Payment Gateway{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section">
+    <div class="container text-center">
+        <h1 class="display-4 mb-4">Welcome to Premium Content</h1>
+        <p class="lead mb-4">Unlock exclusive features and content with our premium packages</p>
+        {% if user_access and user_access.is_valid %}
+        <div class="alert alert-success d-inline-block">
+            <h5 class="mb-0">🎉 You have premium access!</h5>
+            <p class="mb-0">Package: {{ user_access.package.name }} | Expires: {{ user_access.expires_at|date:"M d, Y" }}</p>
+        </div>
+        {% else %}
+        <p class="h5">Choose a package below to get started</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Packages Section -->
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <h2 class="text-center mb-5">Available Packages</h2>
+            
+            {% if packages %}
+            <div class="row">
+                {% for package in packages %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card package-card h-100">
+                        <div class="card-body text-center">
+                            <h4 class="card-title">{{ package.name }}</h4>
+                            <div class="price-badge mb-3">
+                                Rp {{ package.price|floatformat:0 }}
+                            </div>
+                            <p class="card-text">{{ package.description }}</p>
+                            <p class="text-muted">
+                                <i class="fas fa-clock"></i> Valid for {{ package.duration_days }} days
+                            </p>
+                            
+                            {% if user_access and user_access.is_valid %}
+                                {% if user_access.package.id == package.id %}
+                                <button class="btn btn-success" disabled>
+                                    ✓ Currently Active
+                                </button>
+                                {% else %}
+                                <button class="btn btn-secondary" disabled>
+                                    Already Have Premium
+                                </button>
+                                {% endif %}
+                            {% else %}
+                            <a href="{% url 'buy_package' package.id %}" class="btn btn-primary">
+                                Buy Package
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center">
+                <div class="alert alert-info">
+                    <h4>No packages available at the moment</h4>
+                    <p>Please check back later or contact support.</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-12">
+            <h3 class="text-center mb-4">Why Choose Our Premium Content?</h3>
+            <div class="row">
+                <div class="col-md-4 text-center">
+                    <div class="card border-0">
+                        <div class="card-body">
+                            <h2 class="text-primary">💳</h2>
+                            <h5>Multiple Payment Methods</h5>
+                            <p>Pay with Virtual Account, Credit/Debit Card, or QR Code</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 text-center">
+                    <div class="card border-0">
+                        <div class="card-body">
+                            <h2 class="text-primary">🔒</h2>
+                            <h5>Secure & Reliable</h5>
+                            <p>Powered by Xendit's secure payment infrastructure</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 text-center">
+                    <div class="card border-0">
+                        <div class="card-body">
+                            <h2 class="text-primary">⚡</h2>
+                            <h5>Instant Access</h5>
+                            <p>Get immediate access to premium content after payment</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends 'payments/base.html' %}
+
+{% block title %}Payment Successful - Payment Gateway{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="mb-4">
+                        <div class="text-success" style="font-size: 4rem;">✅</div>
+                    </div>
+                    <h2 class="text-success mb-3">Payment Successful!</h2>
+                    <p class="lead mb-4">Thank you for your purchase. Your payment has been processed successfully.</p>
+                    
+                    <div class="alert alert-success">
+                        <h6>What happens next?</h6>
+                        <ul class="text-start mb-0">
+                            <li>You now have access to premium content</li>
+                            <li>Your access is immediately activated</li>
+                            <li>You can start exploring premium features</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'paid_content' %}" class="btn btn-success btn-lg">
+                            Access Premium Content
+                        </a>
+                        <a href="{% url 'home' %}" class="btn btn-outline-primary">
+                            Back to Home
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Optional: Auto-redirect to premium content after 5 seconds
+setTimeout(function() {
+    // Uncomment the line below to enable auto-redirect
+    // window.location.href = "{% url 'paid_content' %}";
+}, 5000);
+</script>
+{% endblock %}

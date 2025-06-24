@@ -1,0 +1,142 @@
+{% extends 'payments/base.html' %}
+
+{% block title %}Premium Content - Payment Gateway{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Premium Content Header -->
+            <div class="hero-section text-center mb-5" style="padding: 40px 0;">
+                <h1 class="display-4">🎉 Welcome to Premium Content!</h1>
+                <p class="lead">You now have access to exclusive premium features</p>
+            </div>
+
+            <!-- User Access Info -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Your Premium Access</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Package:</strong> {{ user_access.package.name }}</p>
+                            <p><strong>Granted:</strong> {{ user_access.granted_at|date:"M d, Y H:i" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Expires:</strong> {{ user_access.expires_at|date:"M d, Y H:i" }}</p>
+                            <p><strong>Status:</strong> 
+                                <span class="badge bg-success">Active</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Premium Content Sections -->
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">🔒 Exclusive Premium Content</h5>
+                        </div>
+                        <div class="card-body">
+                            <h4>Welcome to the Premium Zone!</h4>
+                            <p class="lead">Congratulations! You now have access to our exclusive premium content.</p>
+                            
+                            <div class="alert alert-info">
+                                <h6>What you can access:</h6>
+                                <ul class="mb-0">
+                                    <li>Advanced tutorials and guides</li>
+                                    <li>Premium video content</li>
+                                    <li>Exclusive downloads and resources</li>
+                                    <li>Priority customer support</li>
+                                    <li>Members-only community access</li>
+                                </ul>
+                            </div>
+                            
+                            <hr>
+                            
+                            <h5>🎯 Featured Premium Content</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card border-primary">
+                                        <div class="card-body">
+                                            <h6 class="card-title">Advanced Web Development Course</h6>
+                                            <p class="card-text">Master modern web technologies with our comprehensive course.</p>
+                                            <button class="btn btn-primary btn-sm">Access Course</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card border-primary">
+                                        <div class="card-body">
+                                            <h6 class="card-title">Premium Templates & Resources</h6>
+                                            <p class="card-text">Download professional templates and development resources.</p>
+                                            <button class="btn btn-primary btn-sm">Download Resources</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <div class="card border-success">
+                                        <div class="card-body">
+                                            <h6 class="card-title">Members-Only Webinars</h6>
+                                            <p class="card-text">Join exclusive live sessions with industry experts.</p>
+                                            <button class="btn btn-success btn-sm">View Schedule</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card border-warning">
+                                        <div class="card-body">
+                                            <h6 class="card-title">Priority Support</h6>
+                                            <p class="card-text">Get fast, personalized support from our expert team.</p>
+                                            <button class="btn btn-warning btn-sm">Contact Support</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Section -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">📊 Your Usage Analytics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <h3 class="text-primary">15</h3>
+                            <p>Courses Accessed</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="text-success">47</h3>
+                            <p>Downloads</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="text-warning">8</h3>
+                            <p>Webinars Attended</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="text-info">{{ user_access.package.duration_days }}</h3>
+                            <p>Days Remaining</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="text-center">
+                <a href="{% url 'home' %}" class="btn btn-outline-primary">Back to Home</a>
+                <button class="btn btn-success">Explore More Content</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

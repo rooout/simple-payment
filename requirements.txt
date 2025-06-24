@@ -1,0 +1,5 @@
+Django>=5.2.3
+requests>=2.32.4
+python-decouple>=3.8
+gunicorn>=21.2.0
+whitenoise>=6.5.0

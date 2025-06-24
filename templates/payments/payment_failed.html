@@ -1,0 +1,50 @@
+{% extends 'payments/base.html' %}
+
+{% block title %}Payment Failed - Payment Gateway{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="mb-4">
+                        <div class="text-danger" style="font-size: 4rem;">❌</div>
+                    </div>
+                    <h2 class="text-danger mb-3">Payment Failed</h2>
+                    <p class="lead mb-4">Unfortunately, your payment could not be processed.</p>
+                    
+                    <div class="alert alert-danger">
+                        <h6>Common reasons for payment failure:</h6>
+                        <ul class="text-start mb-0">
+                            <li>Insufficient funds</li>
+                            <li>Card expired or blocked</li>
+                            <li>Payment timeout</li>
+                            <li>Network connectivity issues</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h6>What you can do:</h6>
+                        <ul class="text-start mb-0">
+                            <li>Check your payment method</li>
+                            <li>Try a different payment method</li>
+                            <li>Contact your bank if needed</li>
+                            <li>Try the payment again</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'home' %}" class="btn btn-primary btn-lg">
+                            Try Again
+                        </a>
+                        <a href="{% url 'home' %}" class="btn btn-outline-secondary">
+                            Back to Home
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
