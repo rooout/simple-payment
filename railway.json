@@ -3,6 +3,20 @@
     "command": "pip install -r requirements.txt && python manage.py collectstatic --noinput"
   },
   "deploy": {
-    "startCommand": "python manage.py migrate && python create_packages.py && gunicorn payment_gateway.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120"
+    "startCommand": "python manage.py migrate --noinput && python create_packages.py && gunicorn payment_gateway.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --access-logfile - --error-logfile -"
+  },
+  "envVars": {
+    "DEBUG": {
+      "description": "Django Debug Mode",
+      "default": "False"
+    },
+    "XENDIT_TEST_MODE": {
+      "description": "Enable Xendit Test Mode for Simulation",
+      "default": "True"
+    },
+    "ENABLE_TEST_ENDPOINTS": {
+      "description": "Enable Test/Simulation Endpoints",
+      "default": "True"
+    }
   }
 }

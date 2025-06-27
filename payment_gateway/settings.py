@@ -25,7 +25,22 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-s5qki#4wlz&9nwqwf)05*
 
 DEBUG = config('DEBUG', default=False, cast=bool)
 
+# Enhanced ALLOWED_HOSTS configuration for Railway deployment
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*', cast=lambda v: [s.strip() for s in v.split(',')])
+
+# Specifically allow Railway domain
+RAILWAY_DOMAIN = config('RAILWAY_STATIC_URL', default='').replace('https://', '').replace('http://', '')
+if RAILWAY_DOMAIN and RAILWAY_DOMAIN not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(RAILWAY_DOMAIN)
+
+# Allow Railway's internal domains
+ALLOWED_HOSTS.extend([
+    'simple-payment-production.up.railway.app',
+    '*.railway.app',
+    '*.up.railway.app',
+    'localhost',
+    '127.0.0.1'
+])
 
 
 # Application definition
@@ -156,17 +171,20 @@ USING_XENDIT_TEST_KEYS = XENDIT_SECRET_KEY.startswith('xnd_development_') if XEN
 
 # Production Security Settings (applied when DEBUG=False)
 if not DEBUG:
-    SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=True, cast=bool)
+    # Disable SSL redirect for Railway initial deployment
+    SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=False, cast=bool)
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
-    X_FRAME_OPTIONS = config('X_FRAME_OPTIONS', default='DENY')
-    SECURE_HSTS_SECONDS = 31536000  # 1 year
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
+    X_FRAME_OPTIONS = config('X_FRAME_OPTIONS', default='SAMEORIGIN')
     
-    # CSRF Settings for production
-    CSRF_COOKIE_SECURE = True
-    SESSION_COOKIE_SECURE = True
+    # Disable HSTS for initial deployment to avoid SSL issues
+    # SECURE_HSTS_SECONDS = 31536000  # 1 year
+    # SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    # SECURE_HSTS_PRELOAD = True
+    
+    # CSRF Settings for production - disable secure cookies for HTTP
+    CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)
+    SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=False, cast=bool)
 
 # CSRF Settings for webhook
 CSRF_TRUSTED_ORIGINS = ['https://gateway.xendit.co']
