@@ -21,13 +21,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-s5qki#4wlz&9nwqwf)05*zky^!c9-nf6=y4v7k_u=p6ezno9^k')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=True, cast=bool)
+DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = ['*', 'simple-payment-production.up.railway.app']
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*', cast=lambda v: [s.strip() for s in v.split(',')])
 
 
 # Application definition
@@ -76,12 +74,23 @@ WSGI_APPLICATION = 'payment_gateway.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# Production-ready database configuration
+DATABASE_URL = config('DATABASE_URL', default='')
+
+if DATABASE_URL:
+    # Parse DATABASE_URL for production (PostgreSQL, MySQL, etc.)
+    import dj_database_url
+    DATABASES = {
+        'default': dj_database_url.parse(DATABASE_URL)
     }
-}
+else:
+    # Default to SQLite for development/testing
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
@@ -132,19 +141,32 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Xendit Configuration
+# Xendit Configuration - Production Ready
 XENDIT_SECRET_KEY = config('XENDIT_SECRET_KEY', default='')
 XENDIT_PUBLIC_KEY = config('XENDIT_PUBLIC_KEY', default='')
 XENDIT_CALLBACK_TOKEN = config('XENDIT_CALLBACK_TOKEN', default='')
 APP_URL = config('APP_URL', default='http://localhost:8000')
 
-# Test mode configuration
-# Enable test payment features even in production for demo purposes
+# Enhanced test mode configuration for production demo
 XENDIT_TEST_MODE = config('XENDIT_TEST_MODE', default=True, cast=bool)
 ENABLE_TEST_ENDPOINTS = config('ENABLE_TEST_ENDPOINTS', default=True, cast=bool)
 
-# Check if we're using Xendit test keys
+# Automatically detect if using test keys
 USING_XENDIT_TEST_KEYS = XENDIT_SECRET_KEY.startswith('xnd_development_') if XENDIT_SECRET_KEY else False
+
+# Production Security Settings (applied when DEBUG=False)
+if not DEBUG:
+    SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=True, cast=bool)
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = config('X_FRAME_OPTIONS', default='DENY')
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    
+    # CSRF Settings for production
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
 
 # CSRF Settings for webhook
 CSRF_TRUSTED_ORIGINS = ['https://gateway.xendit.co']

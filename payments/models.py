@@ -19,11 +19,17 @@ class Transaction(models.Model):
         ('PAID', 'Paid'),
         ('FAILED', 'Failed'),
         ('EXPIRED', 'Expired'),
-    ]
-    
+    ]    
     PAYMENT_METHOD_CHOICES = [
         ('VIRTUAL_ACCOUNT', 'Virtual Account'),
+        ('VA_BCA', 'BCA Virtual Account'),
+        ('VA_BNI', 'BNI Virtual Account'),
+        ('VA_BRI', 'BRI Virtual Account'),
+        ('VA_MANDIRI', 'Mandiri Virtual Account'),
+        ('VA_PERMATA', 'Permata Virtual Account'),
+        ('VA_BSI', 'BSI Virtual Account'),
         ('CREDIT_CARD', 'Credit/Debit Card'),
+        ('QRIS', 'QR Code (QRIS)'),
         ('QR_CODE', 'QR Code'),
     ]
     
@@ -31,11 +37,15 @@ class Transaction(models.Model):
     package = models.ForeignKey(Package, on_delete=models.CASCADE)
     external_id = models.CharField(max_length=255, unique=True)
     invoice_id = models.CharField(max_length=255, blank=True, null=True)
+    xendit_qr_id = models.CharField(max_length=100, blank=True, null=True)
+    xendit_payment_id = models.CharField(max_length=100, blank=True, null=True)
     session_key = models.CharField(max_length=255)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, blank=True)
     payment_url = models.URLField(blank=True, null=True)
+    payment_details = models.JSONField(blank=True, null=True)
+    xendit_callback_data = models.JSONField(blank=True, null=True)
     paid_at = models.DateTimeField(blank=True, null=True)
     expires_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)

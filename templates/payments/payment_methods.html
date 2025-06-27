@@ -1,0 +1,654 @@
+{% extends 'payments/base.html' %}
+
+{% block title %}Choose Payment Method{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-credit-card"></i> Choose Payment Method</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h5><i class="fas fa-box"></i> {{ transaction.package.name }}</h5>
+                        <p class="mb-1">{{ transaction.package.description }}</p>
+                        <strong>Amount: Rp {{ transaction.amount|floatformat:0 }}</strong>
+                    </div>
+
+                    <div class="alert alert-warning mb-4">
+                        <h5><i class="fas fa-flask"></i> Xendit Sandbox Test Mode</h5>
+                        <p class="mb-3">You're using Xendit's test environment.</p>
+                        <button type="button" id="simulate-payment-success" class="btn btn-success btn-lg">
+                            <i class="fas fa-check-circle"></i> ✅ Simulate Payment Success (Instant)
+                        </button>
+                        <p class="small text-muted mt-2">
+                            <i class="fas fa-info-circle"></i> 
+                            Click this button to instantly complete the payment for testing purposes using Xendit Sandbox API
+                        </p>
+                    </div>
+
+                    <ul class="nav nav-tabs" id="paymentTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="va-tab" data-bs-toggle="tab" data-bs-target="#va-panel" type="button" role="tab">
+                                <i class="fas fa-university"></i> Virtual Account
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="qr-tab" data-bs-toggle="tab" data-bs-target="#qr-panel" type="button" role="tab">
+                                <i class="fas fa-qrcode"></i> QR Code
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="card-tab" data-bs-toggle="tab" data-bs-target="#card-panel" type="button" role="tab">
+                                <i class="fas fa-credit-card"></i> Credit Card
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content mt-4" id="paymentTabContent">
+                        <div class="tab-pane fade show active" id="va-panel" role="tabpanel">
+                            <h5>Choose Your Bank</h5>
+                            <form id="va-form">
+                                <div class="mb-3">
+                                    <label for="customer_name" class="form-label">Customer Name</label>
+                                    <input type="text" class="form-control" id="customer_name" name="customer_name" value="Customer" required>
+                                </div>
+                                <div class="row">
+                                    {% for bank in available_banks %}
+                                    <div class="col-md-6 mb-3">
+                                        <div class="bank-option" data-bank-code="{{ bank.code }}">
+                                            <div class="card h-100 bank-card">
+                                                <div class="card-body text-center">
+                                                    <h6 class="card-title">{{ bank.name }}</h6>
+                                                    <div class="bank-logo">{{ bank.code }}</div>
+                                                    {% if bank.fee > 0 %}
+                                                    <small class="text-muted">Fee: Rp {{ bank.fee|floatformat:0 }}</small>
+                                                    {% else %}
+                                                    <small class="text-success">No Fee</small>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100" id="va-submit">
+                                    <i class="fas fa-university"></i> Create Virtual Account
+                                </button>
+                            </form>
+
+                            <div id="va-result" class="mt-4" style="display: none;">
+                                <div class="alert alert-success">
+                                    <h5><i class="fas fa-check-circle"></i> Virtual Account Created!</h5>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <strong>Bank:</strong> <span id="va-bank"></span><br>
+                                            <strong>Account Number:</strong> <span id="va-number" class="h5 text-primary"></span><br>
+                                            <strong>Amount:</strong> Rp <span id="va-amount"></span>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <strong>Expires:</strong> <span id="va-expiry"></span>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <p class="mb-0">
+                                        <i class="fas fa-info-circle"></i> 
+                                        Please transfer the exact amount to the virtual account number above. 
+                                        Payment will be processed automatically.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="qr-panel" role="tabpanel">
+                            <h5>QR Code Payment</h5>
+                            <p class="text-muted">Choose your preferred QR payment method and scan with your app</p>
+                            
+                            <div class="mb-4">
+                                <label class="form-label">Select QR Payment Type:</label>
+                                <div class="row">
+                                    {% for qr_type in available_qr_types %}
+                                    <div class="col-md-6 mb-3">
+                                        <div class="qr-type-option" data-qr-type="{{ qr_type.code }}">
+                                            <div class="card h-100 qr-type-card">
+                                                <div class="card-body text-center">
+                                                    <h6 class="card-title">{{ qr_type.name }}</h6>
+                                                    <div class="qr-type-logo">
+                                                        <i class="fas fa-qrcode"></i>
+                                                    </div>
+                                                    <small class="text-muted">{{ qr_type.description }}</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="text-center">
+                                    <button type="button" class="btn btn-primary" id="generate-qr" disabled>
+                                        <i class="fas fa-qrcode"></i> Generate QR Code
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="qr-result" class="mt-4" style="display: none;">
+                                <div class="alert alert-success text-center">
+                                    <h5><i class="fas fa-qrcode"></i> Scan to Pay</h5>
+                                    <div id="qr-code-display" class="mb-3">
+                                    </div>
+                                    <p><strong>Amount: Rp <span id="qr-amount"></span></strong></p>
+                                    <p class="mb-3">
+                                        <i class="fas fa-info-circle"></i> 
+                                        Scan this QR code with any QRIS-compatible app
+                                    </p>
+                                    
+                                    {% if settings.DEBUG or settings.USING_XENDIT_TEST_KEYS %}
+                                    <div class="alert alert-warning mt-3">
+                                        <strong><i class="fas fa-flask"></i> Test Mode</strong><br>
+                                        <small>This QR code contains test data. Use the button below to simulate a successful payment.</small>
+                                        <div class="mt-2">
+                                            <button type="button" class="btn btn-warning btn-sm" id="simulate-qr-payment">
+                                                <i class="fas fa-play"></i> Simulate Payment Success
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="card-panel" role="tabpanel">
+                            <h5>Credit/Debit Card Payment</h5>
+                            <form id="card-form">
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label for="card_holder_name" class="form-label">Cardholder Name</label>
+                                        <input type="text" class="form-control" id="card_holder_name" name="card_holder_name" required>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label for="card_number" class="form-label">Card Number</label>
+                                        <input type="text" class="form-control" id="card_number" name="card_number" 
+                                               placeholder="1234 5678 9012 3456" maxlength="19" required>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="exp_month" class="form-label">Month</label>
+                                        <select class="form-select" id="exp_month" name="exp_month" required>
+                                            <option value="">MM</option>
+                                            {% for month in "123456789012"|make_list %}
+                                                <option value="{% if forloop.counter < 10 %}0{% endif %}{{ forloop.counter }}">
+                                                    {% if forloop.counter < 10 %}0{% endif %}{{ forloop.counter }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="exp_year" class="form-label">Year</label>
+                                        <select class="form-select" id="exp_year" name="exp_year" required>
+                                            <option value="">YYYY</option>
+                                            {% now "Y" as current_year %}
+                                            {% for i in "12345678910"|make_list %}
+                                                <option value="{{ current_year|add:forloop.counter0 }}">{{ current_year|add:forloop.counter0 }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="cvn" class="form-label">CVN</label>
+                                        <input type="text" class="form-control" id="cvn" name="cvn" 
+                                               placeholder="123" maxlength="4" required>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-success w-100" id="card-submit">
+                                    <i class="fas fa-lock"></i> Pay Securely
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div id="loading" class="text-center mt-4" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Processing payment...</p>
+                    </div>
+
+                    <div id="error-message" class="alert alert-danger mt-4" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.bank-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid #dee2e6;
+}
+
+.bank-card:hover {
+    border-color: #007bff;
+    box-shadow: 0 4px 8px rgba(0,123,255,0.1);
+}
+
+.bank-card.selected {
+    border-color: #007bff;
+    background-color: #f8f9ff;
+}
+
+.qr-type-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid #dee2e6;
+}
+
+.qr-type-card:hover {
+    border-color: #28a745;
+    box-shadow: 0 4px 8px rgba(40,167,69,0.1);
+}
+
+.qr-type-card.selected {
+    border-color: #28a745;
+    background-color: #f8fff8;
+}
+
+.bank-logo, .qr-type-logo {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #007bff;
+    padding: 10px;
+    background: #f8f9ff;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+.qr-type-logo {
+    color: #28a745;
+    background: #f8fff8;
+}
+
+#qr-code-display {
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+</style>
+
+<script>
+let selectedBank = null;
+let selectedQrType = null;
+const transactionId = '{{ transaction.id }}';
+
+// Simulate Payment Success - Universal payment completion for Xendit Sandbox
+document.getElementById('simulate-payment-success').addEventListener('click', function() {
+    const button = this;
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 🔄 Simulating Payment...';
+    
+    fetch(`/payments/simulate-payment/${transactionId}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccess('✅ Payment simulation successful! Redirecting to premium content...');
+            setTimeout(() => {
+                if (data.redirect_url) {
+                    window.location.href = data.redirect_url;
+                } else {
+                    window.location.href = '/payments/paid-content/';
+                }
+            }, 1500);
+        } else {
+            showError('❌ Simulation failed: ' + (data.message || 'Unknown error'));
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-check-circle"></i> ✅ Simulate Payment Success (Instant)';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showError('❌ Network error during simulation');
+        button.disabled = false;
+        button.innerHTML = '<i class="fas fa-check-circle"></i> ✅ Simulate Payment Success (Instant)';
+    });
+});
+
+// Bank selection
+document.querySelectorAll('.bank-option').forEach(option => {
+    option.addEventListener('click', function() {
+        // Remove previous selection
+        document.querySelectorAll('.bank-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+        
+        // Add selection to clicked card
+        this.querySelector('.bank-card').classList.add('selected');
+        selectedBank = this.dataset.bankCode;
+    });
+});
+
+// QR Type selection
+document.querySelectorAll('.qr-type-option').forEach(option => {
+    option.addEventListener('click', function() {
+        // Remove previous selection
+        document.querySelectorAll('.qr-type-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+        
+        // Add selection to clicked card
+        this.querySelector('.qr-type-card').classList.add('selected');
+        selectedQrType = this.dataset.qrType;
+        
+        // Enable generate QR button
+        document.getElementById('generate-qr').disabled = false;
+    });
+});
+
+// Virtual Account form
+document.getElementById('va-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    if (!selectedBank) {
+        showError('Please select a bank');
+        return;
+    }
+    
+    const customerName = document.getElementById('customer_name').value;
+    
+    showLoading();
+    
+    fetch(`/payment/va/${transactionId}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: `bank_code=${selectedBank}&customer_name=${encodeURIComponent(customerName)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        if (data.success) {
+            document.getElementById('va-bank').textContent = data.bank_name;
+            document.getElementById('va-number').textContent = data.va_number;
+            document.getElementById('va-amount').textContent = parseInt(data.amount).toLocaleString();
+            document.getElementById('va-expiry').textContent = new Date(data.expiry).toLocaleString();
+            document.getElementById('va-result').style.display = 'block';
+            
+            // Start polling for payment status
+            pollPaymentStatus(data.transaction_id);
+        } else {
+            showError(data.message);
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        showError('Network error. Please try again.');
+    });
+});
+
+// QR Code generation
+document.getElementById('generate-qr').addEventListener('click', function() {
+    if (!selectedQrType) {
+        showError('Please select a QR payment type');
+        return;
+    }
+    
+    showLoading();
+    
+    fetch(`/payment/qr/${transactionId}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: `qr_type=${selectedQrType}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        if (data.success) {
+            // Display QR code image
+            const qrDisplay = document.getElementById('qr-code-display');
+            if (data.qr_code_image) {
+                qrDisplay.innerHTML = `<img src="${data.qr_code_image}" alt="QR Code" style="max-width: 250px; max-height: 250px;" class="img-fluid">`;
+            } else if (data.qr_string) {
+                qrDisplay.innerHTML = `<div style="font-family: monospace; word-break: break-all; padding: 20px; font-size: 10px; background: white; border: 1px solid #ccc;">${data.qr_string}</div>`;
+            } else {
+                qrDisplay.innerHTML = `<div class="text-muted">QR Code generation failed</div>`;
+            }
+            
+            document.getElementById('qr-amount').textContent = parseInt(data.amount).toLocaleString();
+            document.getElementById('qr-result').style.display = 'block';
+            
+            // Show QR type info and test mode status
+            const qrTypeName = document.querySelector(`[data-qr-type="${selectedQrType}"] .card-title`).textContent;
+            let headerText = `<i class="fas fa-qrcode"></i> ${qrTypeName} - Scan to Pay`;
+            
+            // Add test mode indicator if applicable
+            if (data.test_mode) {
+                headerText += ' <span class="badge bg-warning text-dark">Test Mode</span>';
+            } else if (data.fallback_mode) {
+                headerText += ' <span class="badge bg-info">Demo QR</span>';
+            }
+            
+            document.getElementById('qr-result').querySelector('h5').innerHTML = headerText;
+            
+            // Update instructions based on mode
+            const instructionElement = document.getElementById('qr-result').querySelector('p:nth-of-type(2)');
+            if (data.test_mode) {
+                instructionElement.innerHTML = `
+                    <i class="fas fa-info-circle"></i> 
+                    This is a realistic test QR code. In production, this would work with all QRIS apps.
+                    <br><small class="text-muted">Use the simulation button below to test payment flow.</small>
+                `;
+            } else if (data.fallback_mode) {
+                instructionElement.innerHTML = `
+                    <i class="fas fa-info-circle"></i> 
+                    Demo QR code for testing purposes.
+                    <br><small class="text-muted">Use the simulation button below to test payment flow.</small>
+                `;
+            } else {
+                instructionElement.innerHTML = `
+                    <i class="fas fa-info-circle"></i> 
+                    Scan this QR code with any QRIS-compatible app (GoPay, OVO, DANA, ShopeePay, etc.)
+                `;
+            }
+            
+            // Start polling for payment status
+            pollPaymentStatus(data.transaction_id);
+        } else {
+            showError(data.message);
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        showError('Network error. Please try again.');
+    });
+});
+
+// Credit card form
+document.getElementById('card-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    showLoading();
+    
+    fetch(`/payment/card/${transactionId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        if (data.success) {
+            if (data.redirect_url) {
+                window.location.href = data.redirect_url;
+            } else {
+                showError('Payment processed but redirect failed');
+            }
+        } else {
+            showError(data.message);
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        showError('Network error. Please try again.');
+    });
+});
+
+// Card number formatting
+document.getElementById('card_number').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\s/g, '').replace(/[^0-9]/gi, '');
+    let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+    e.target.value = formattedValue;
+});
+
+// QR Code simulation (Test Mode Only)
+document.addEventListener('DOMContentLoaded', function() {
+    const simulateBtn = document.getElementById('simulate-qr-payment');
+    if (simulateBtn) {
+        simulateBtn.addEventListener('click', function() {
+            if (confirm('Simulate a successful QR payment? This will mark the transaction as paid.')) {
+                showLoading();
+                
+                fetch(`/payment/simulate-qr/${transactionId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    hideLoading();
+                    if (data.success) {
+                        // Show success message
+                        const alert = document.createElement('div');
+                        alert.className = 'alert alert-success mt-3';
+                        alert.innerHTML = `
+                            <h5><i class="fas fa-check-circle"></i> Payment Successful!</h5>
+                            <p>${data.message}</p>
+                            <a href="${data.redirect_url}" class="btn btn-success">
+                                <i class="fas fa-arrow-right"></i> Access Premium Content
+                            </a>
+                        `;
+                        
+                        document.getElementById('qr-result').appendChild(alert);
+                        
+                        // Disable simulate button
+                        simulateBtn.disabled = true;
+                        simulateBtn.innerHTML = '<i class="fas fa-check"></i> Payment Completed';
+                        
+                        // Auto redirect after 3 seconds
+                        setTimeout(() => {
+                            window.location.href = data.redirect_url;
+                        }, 3000);
+                    } else {
+                        showError(data.message);
+                    }
+                })
+                .catch(error => {
+                    hideLoading();
+                    showError('Network error during simulation.');
+                });
+            }
+        });
+    }
+});
+
+// Utility functions
+function showLoading() {
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('error-message').style.display = 'none';
+}
+
+function hideLoading() {
+    document.getElementById('loading').style.display = 'none';
+}
+
+function showError(message) {
+    document.getElementById('error-message').textContent = message;
+    document.getElementById('error-message').style.display = 'block';
+}
+
+function showSuccess(message) {
+    // Create a temporary success message element if it doesn't exist
+    let successElement = document.getElementById('success-message');
+    if (!successElement) {
+        successElement = document.createElement('div');
+        successElement.id = 'success-message';
+        successElement.className = 'alert alert-success';
+        successElement.style.position = 'fixed';
+        successElement.style.top = '20px';
+        successElement.style.right = '20px';
+        successElement.style.zIndex = '9999';
+        successElement.style.maxWidth = '400px';
+        document.body.appendChild(successElement);
+    }
+    successElement.textContent = message;
+    successElement.style.display = 'block';
+    
+    // Auto-hide after 3 seconds
+    setTimeout(() => {
+        successElement.style.display = 'none';
+    }, 3000);
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function pollPaymentStatus(transactionId) {
+    const interval = setInterval(() => {
+        fetch(`/check-payment/${transactionId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.paid) {
+                clearInterval(interval);
+                window.location.href = data.redirect_url;
+            }
+        })
+        .catch(error => {
+            console.error('Error checking payment status:', error);
+        });
+    }, 3000); // Check every 3 seconds
+    
+    // Stop polling after 10 minutes
+    setTimeout(() => {
+        clearInterval(interval);
+    }, 600000);
+}
+</script>
+
+<!-- CSRF Token for AJAX requests -->
+{% csrf_token %}
+
+{% endblock %}

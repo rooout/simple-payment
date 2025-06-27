@@ -206,3 +206,5 @@ Procfile
 setup_production.py
 railway_setup.share
 payments/management/commands/check_status.py
+
+.github/
